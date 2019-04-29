@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 
-const left = ({ className }) => (
+const LeftArrow = ({ className }) => (
   <svg
     className={className}
     xmlns="http://www.w3.org/2000/svg"
@@ -11,13 +11,13 @@ const left = ({ className }) => (
   </svg>
 );
 
-export const ArrowSvgLeft = styled(left)`
+export const ArrowSvgLeft = styled(LeftArrow)`
   fill: #fff;
   width: 10px;
   height: auto;
 `;
 
-const right = ({ className }) => (
+const RightArrow = ({ className }) => (
   <svg
     className={className}
     xmlns="http://www.w3.org/2000/svg"
@@ -27,7 +27,7 @@ const right = ({ className }) => (
   </svg>
 );
 
-export const ArrowSvgRight = styled(right)`
+export const ArrowSvgRight = styled(RightArrow)`
   fill: #fff;
   width: 10px;
   height: auto;

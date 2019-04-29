@@ -4,6 +4,7 @@ import { getArrayFromTo } from "./functions/getArrayFromTo";
 import { getNumberOfDay } from "./functions/getNumberOfDay";
 import { now, months, daysOfWeek } from "./utils/settings";
 import { getDateObject } from "./functions/getDateObject";
+import { getTimeOfStartDay } from "./functions/getTimeOfStartDay";
 
 export class Calendar extends Component {
   state = {
@@ -17,7 +18,23 @@ export class Calendar extends Component {
     year: 1900
   };
 
-  conponentDidUpdate = () => {};
+  componentDidUpdate = (_, prevState) => {
+    const isLoadingUpdated =
+      prevState.isLoading !== this.props.isLoading &&
+      this.props.isLoading !== undefined;
+    const dateUpdated =
+      prevState.date !== this.props.date && this.props.date !== undefined;
+    const monthsUpdated =
+      prevState.months !== this.props.months && this.props.months !== undefined;
+    const daysOfWeekUpdated =
+      prevState.daysOfWeek !== this.props.daysOfWeek &&
+      this.props.daysOfWeek !== undefined;
+
+    console.log("isLoadingUpdated", isLoadingUpdated);
+    console.log("dateUpdated", dateUpdated);
+    console.log("monthsUpdated", monthsUpdated);
+    console.log("daysOfWeekUpdated", daysOfWeekUpdated);
+  };
 
   componentDidMount = () => {
     this.setNewState({
@@ -29,9 +46,14 @@ export class Calendar extends Component {
   };
 
   getDaysByDate = (date = this.state.date) => {
-    const currentDay = date.getDate();
     const currentYear = date.getFullYear();
     const currentMonth = date.getMonth();
+    const currentDay = date.getDate();
+
+    const todayYear = new Date().getFullYear();
+    const todayMonth = new Date().getMonth();
+    const todayDay = new Date().getDate();
+    const todayTime = getTimeOfStartDay(todayYear, todayMonth, todayDay);
 
     const prevMonthDaysNum = getDaysNumber(currentYear, currentMonth - 1);
     const currMonthDaysNum = getDaysNumber(currentYear, currentMonth);
@@ -48,17 +70,20 @@ export class Calendar extends Component {
       42 - currMonthDaysNum - prevMonthDays.length
     );
 
-    const prevMonthDaysObjects = prevMonthDays.map(el => ({
-      day: el,
+    const isToday = (year, month, day) =>
+      getTimeOfStartDay(year, month, day) === todayTime;
+
+    const prevMonthDaysObjects = prevMonthDays.map(day => ({
+      day,
       type: "prev"
     }));
-    const currMonthDaysObjects = currMonthDays.map(el => ({
-      day: el,
+    const currMonthDaysObjects = currMonthDays.map(day => ({
+      day,
       type: "curr",
-      today: currentDay === el
+      today: isToday(currentYear, currentMonth, day)
     }));
-    const nextMonthDaysObjects = nextMonthDays.map(el => ({
-      day: el,
+    const nextMonthDaysObjects = nextMonthDays.map(day => ({
+      day,
       type: "next"
     }));
 
@@ -70,23 +95,21 @@ export class Calendar extends Component {
   };
 
   getNewDate = (date = this.state.date) => changer => {
+    // clone Date object
     const newDate = new Date(date.getTime());
     switch (changer.type) {
       case "year": {
         newDate.setFullYear(changer.value);
         return { newDate };
       }
-
       case "month": {
         newDate.setMonth(changer.value);
         return { newDate };
       }
-
       case "day": {
         newDate.setDate(changer.value);
         return { newDate };
       }
-
       default:
         return date;
     }
@@ -94,6 +117,7 @@ export class Calendar extends Component {
 
   setNewState = newState => {
     const { date: newDate = this.state.date } = newState;
+
     const days = this.getDaysByDate(newDate);
     const dateObject = getDateObject(newDate);
     const state = { ...this.state, ...newState, days, ...dateObject };
@@ -101,18 +125,18 @@ export class Calendar extends Component {
     this.setState(state);
   };
 
-  setYear = value => {
-    const { newDate } = this.getNewDate()({ type: "year", value });
+  setYear = (value, prevDate) => {
+    const { newDate } = this.getNewDate(prevDate)({ type: "year", value });
     this.setNewState({ date: newDate });
   };
 
-  setMonth = value => {
-    const { newDate } = this.getNewDate()({ type: "month", value });
+  setMonth = (value, prevDate) => {
+    const { newDate } = this.getNewDate(prevDate)({ type: "month", value });
     this.setNewState({ date: newDate });
   };
 
-  setDay = value => {
-    const { newDate } = this.getNewDate()({ type: "day", value });
+  setDay = (value, prevDate) => {
+    const { newDate } = this.getNewDate(prevDate)({ type: "day", value });
     this.setNewState({ date: newDate });
   };
 
@@ -120,7 +144,8 @@ export class Calendar extends Component {
     this.props.render({
       ...this.state,
       actions: {
-        changeDate: this.changeDate,
+        setNewState: this.setNewState,
+        getNewDate: this.getNewDate,
         setYear: this.setYear,
         setMonth: this.setMonth,
         setDay: this.setDay
