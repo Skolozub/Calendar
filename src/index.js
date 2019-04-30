@@ -55,6 +55,7 @@ class App extends Component {
   date = new Date();
   timeout = 0;
   calendar = React.createRef();
+  cursor = 0;
 
   componentDidMount = () => {
     this.getNewDate(getDateObject(this.date));
@@ -80,28 +81,91 @@ class App extends Component {
   };
 
   openCalendar = () => {
-    this.setState({ isOpenCalendar: true });
+    !this.state.isOpenCalendar && this.setState({ isOpenCalendar: true });
   };
 
   getNewDate = ({ date, day, month, year }) => {
     this.date = date;
-    this.setState({ value: `${day}/${month + 1}/${year}` });
+    this.setState({
+      value: `${`0${day}`.slice(-2)}/${`0${month + 1}`.slice(
+        -2
+      )}/${`${year}`.slice(-4)}`
+    });
   };
 
   onChangeDate = e => {
     const { value } = e.currentTarget;
-    const [day, month, year] = value.split("/");
+    const [day = "", month = "", year = ""] = value.split("/");
+
+    const clearDay = (day, cursor) => {
+      const regExp = /[^\d]/g;
+      const badSymbols = (day.match(regExp) || "").length;
+      const clearedDay = day.replace(regExp, "");
+      const croppedDay = clearedDay.slice(0, 2);
+      const processedDay = croppedDay > 31 ? 31 : croppedDay;
+      const cleanedCursor = cursor - badSymbols;
+
+      if (cleanedCursor <= 2) {
+        const newCursor = cleanedCursor > 1 ? 3 : cleanedCursor;
+        return [processedDay, newCursor];
+      }
+      return [processedDay, null];
+    };
+
+    const clearMonth = (month, cursor) => {
+      const regExp = /[^\d]/g;
+      const badSymbols = (month.match(regExp) || "").length;
+      const clearedMonth = month.replace(regExp, "");
+      const croppedMonth = clearedMonth.slice(0, 2);
+      const processedMonth = croppedMonth > 12 ? 12 : croppedMonth;
+      const cleanedCursor = cursor - badSymbols;
+      if (cleanedCursor > 2 && cleanedCursor <= 5) {
+        const newCursor = cleanedCursor > 4 ? 6 : cleanedCursor;
+        return [processedMonth, newCursor];
+      }
+      return [processedMonth, null];
+    };
+
+    const clearYear = (year, cursor) => {
+      const regExp = /[^\d]/g;
+      const badSymbols = (year.match(regExp) || "").length;
+      const clearedYear = year.replace(regExp, "");
+      const croppedYear = clearedYear.slice(0, 4);
+
+      const cleanedCursor = cursor - badSymbols;
+      if (cleanedCursor > 5) {
+        return [croppedYear, cleanedCursor];
+      }
+      return [croppedYear, null];
+    };
+
+    const cursor = e.target.selectionStart;
+
+    const [clearedDay, dayCursor] = clearDay(day, cursor);
+    const [clearedMonth, monthCursor] = clearMonth(month, cursor);
+    const [clearedYear, yearCursor] = clearYear(year, cursor);
+
+    const newCursor = dayCursor || monthCursor || yearCursor;
 
     if (
-      day.length >= 1 &&
-      day > 0 &&
-      month.length >= 1 &&
-      month > 0 &&
-      year.length >= 4
+      clearedDay.length > 1 &&
+      clearedDay.length < 3 &&
+      clearedDay > 0 &&
+      clearedMonth.length > 1 &&
+      clearedMonth.length < 3 &&
+      clearedMonth > 0 &&
+      clearedYear.length > 3 &&
+      clearedYear.length < 5
     )
-      this.date = new Date(year, month - 1, day);
-
-    this.setState({ value });
+      this.date = new Date(clearedYear, clearedMonth - 1, clearedDay);
+    const tar = e.currentTarget;
+    this.setState(
+      () => ({
+        value: `${clearedDay}/${clearedMonth}/${clearedYear}`,
+        date: new Date(clearedYear, clearedMonth - 1, clearedDay)
+      }),
+      () => tar.setSelectionRange(newCursor, newCursor)
+    );
   };
 
   render = () => (
@@ -109,7 +173,6 @@ class App extends Component {
       <BasicWrapper ref={this.calendar}>
         <StyledInput
           value={this.state.value}
-          // onBlur={this.onBlurDate}
           onChange={this.onChangeDate}
           onClick={this.openCalendar}
         />
