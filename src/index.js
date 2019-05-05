@@ -70,14 +70,12 @@ class App extends Component {
     const domNode = this.calendar.current;
 
     if (!domNode || !domNode.contains(event.target)) {
-      if (this.state.isOpenCalendar) {
-        this.closeCalendar();
-      }
+      this.closeCalendar();
     }
   };
 
   closeCalendar = () => {
-    this.setState({ isOpenCalendar: false });
+    this.state.isOpenCalendar && this.setState({ isOpenCalendar: false });
   };
 
   openCalendar = () => {
